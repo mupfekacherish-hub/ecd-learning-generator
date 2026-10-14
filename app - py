@@ -1,0 +1,94 @@
+import streamlit as st
+
+st.set_page_config(
+    page_title="ECD AI Learning Generator",
+    page_icon="📚",
+    layout="centered"
+)
+
+def personalise_activity(age, level, interest, extra_support):
+    return {
+        "ability": f"Adapt the task to a {level.lower()} learner aged {age}.",
+        "interest": f"Use {interest.lower()} to make the activity enjoyable.",
+        "extra_support": (
+            "Use demonstrations, pictures, repetition and individual guidance."
+            if extra_support
+            else "Encourage independent participation."
+        ),
+        "age_guidance": (
+            "Keep the activity short, playful and suitable for young children."
+        )
+    }
+
+def generate_activity(area, topic, age, level, interest, extra_support):
+    activities = {
+        "Mathematics": {
+            "Counting": {
+                "objective": "Count objects appropriate to the learner's level.",
+                "materials": "Bottle tops, sticks or stones.",
+                "instructions": (
+                    "Sing a counting song. Let the child touch and count "
+                    "each object one by one."
+                ),
+                "assessment": "Can the child count the objects accurately?"
+            }
+        }
+    }
+
+    if area not in activities or topic not in activities[area]:
+        return None
+
+    activity = activities[area][topic]
+    personalisation = personalise_activity(
+        age, level, interest, extra_support
+    )
+
+    return {
+        **activity,
+        **personalisation,
+        "area": area,
+        "topic": topic,
+        "age": age
+    }
+
+st.title("📚 ECD AI Learning Activity Generator")
+st.write(
+    "Create a learning activity suited to an Early Childhood Development learner."
+)
+
+with st.form("activity_form"):
+    area = st.selectbox("Learning area", ["Mathematics"])
+    topic = st.selectbox("Topic", ["Counting"])
+    age = st.slider("Learner's age", 3, 8, 5)
+    level = st.selectbox(
+        "Learning level",
+        ["Needs support", "Beginner", "Intermediate", "Advanced"]
+    )
+    interest = st.selectbox(
+        "Learner's interest",
+        ["Animals", "Songs", "Stories", "Drawing", "Games"]
+    )
+    extra_support = st.checkbox("Learner needs extra support", value=True)
+
+    submitted = st.form_submit_button("Generate Activity")
+
+if submitted:
+    result = generate_activity(
+        area, topic, age, level, interest, extra_support
+    )
+
+    if result:
+        st.subheader("Your learning activity")
+        st.write("**Learning area:**", result["area"])
+        st.write("**Topic:**", result["topic"])
+        st.write("**Age:**", result["age"])
+        st.write("**Objective:**", result["objective"])
+        st.write("**Materials:**", result["materials"])
+        st.write("**Instructions:**", result["instructions"])
+        st.write("**Ability support:**", result["ability"])
+        st.write("**Personalised interest:**", result["interest"])
+        st.write("**Extra support:**", result["extra_support"])
+        st.write("**Age guidance:**", result["age_guidance"])
+        st.write("**Assessment:**", result["assessment"])
+    else:
+        st.warning("This activity is not available yet.")
