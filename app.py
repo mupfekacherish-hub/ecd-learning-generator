@@ -1,19 +1,28 @@
+
+import os
+from datetime import datetime
+
 import streamlit as st
 from supabase import create_client
 
 st.set_page_config(
     page_title="ECD Learn & Grow",
     page_icon="🌱",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed",
 )
-
-
 
 # Connect to the Supabase database
 supabase = create_client(
     st.secrets["SUPABASE_URL"],
-    st.secrets["SUPABASE_KEY"]
+    st.secrets["SUPABASE_KEY"],
 )
+
+# -----------------------------
+# ECD LEARNING CONTENT
+# Picture-first activities are used for younger learners.
+# -----------------------------
+
 
     page_title="ECD Learn & Grow",
     page_icon="🌈",
