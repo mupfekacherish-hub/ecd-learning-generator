@@ -1,5 +1,6 @@
+Python
+
 import streamlit as st
-from supabase import create_client
 
 st.set_page_config(
     page_title="ECD Learn & Grow",
@@ -7,24 +8,10 @@ st.set_page_config(
     layout="wide"
 )
 
+st.title("🌱 ECD Learn & Grow")
+st.write("An individualised learning activity generator for ECD learners.")
 
-@st.cache_resource
-def connect_database():
-    return create_client(
-        st.secrets["SUPABASE_URL"],
-        st.secrets["SUPABASE_KEY"]
-    )
-
-
-try:
-    supabase = connect_database()
-    database_ready = True
-except Exception:
-    supabase = None
-    database_ready = False
-
-
-TOPICS = {
+AREAS = {
     "Mathematics": [
         "Counting", "Number recognition", "Shapes",
         "Sizes and patterns", "Sorting and matching"
@@ -47,329 +34,214 @@ TOPICS = {
     ],
     "Physical Education and Arts": [
         "Kicking", "Jumping and balancing",
-        "Drawing and colouring", "Singing and dancing",
-        "Modelling"
+        "Drawing and colouring", "Singing and dancing", "Modelling"
     ]
 }
 
-INTERESTS = ["Songs", "Games", "Stories", "Drawing", "Movement"]
+AGES = ["Under 6 years", "7–8 years"]
 LEVELS = ["Needs support", "Developing", "Challenging"]
-SUPPORTS = ["None", "Visual aids", "Repetition"]
+INTERESTS = ["Songs", "Games", "Stories", "Drawing", "Movement", "Animals"]
+SUPPORTS = ["None", "Visual aids", "Repetition", "Hands-on activities"]
 
 
-def make_activity(area, topic, age, level, interest, support):
+def generate_activity(area, topic, age, level, interest, support):
     young = age == "Under 6 years"
 
-    objectives = {
-        "Mathematics": f"Practise {topic.lower()} using objects and play.",
-        "English": f"Develop language skills through {topic.lower()}.",
-        "Shona": f"Practise Shona language through {topic.lower()}.",
-        "Science and Technology": f"Explore {topic.lower()} through observation.",
-        "Social Science": f"Understand {topic.lower()} through discussion and role-play.",
-        "Physical Education and Arts": f"Develop physical or creative skills through {topic.lower()}."
-    }
+    if young:
+        objective = (
+            f"The learner will begin to understand {topic.lower()} "
+            "through play, pictures and practical activities."
+        )
+        duration = "10–15 minutes"
+        steps = [
+            "Introduce the topic using familiar objects or pictures.",
+            "Demonstrate the activity slowly.",
+            "Invite the learner to participate through play.",
+            "Praise the learner's effort and review what was learned."
+        ]
+    else:
+        objective = (
+            f"The learner will demonstrate understanding of "
+            f"{topic.lower()} by completing a practical task."
+        )
+        duration = "20–30 minutes"
+        steps = [
+            "Introduce the topic and ask questions about prior knowledge.",
+            "Explain and demonstrate the task.",
+            "Ask the learner to complete an individual or group activity.",
+            "Review the answers and encourage the learner to explain their work."
+        ]
 
     materials = {
-        "Mathematics": "Bottle tops, sticks, blocks or number cards.",
-        "English": "Picture cards, letter cards, books or paper.",
-        "Shona": "Pictures, familiar objects and Shona word cards.",
-        "Science and Technology": "Safe everyday objects and pictures.",
-        "Social Science": "Pictures and familiar role-play objects.",
-        "Physical Education and Arts": "Paper, crayons, safe modelling materials or open space."
-    }
+        "Counting": "Bottle tops, stones or counters",
+        "Number recognition": "Number cards and counters",
+        "Shapes": "Shape cards and classroom objects",
+        "Phonics": "Letter cards and picture cards",
+        "Letter recognition": "Alphabet cards and paper",
+        "Vocabulary": "Pictures and familiar objects",
+        "Picture reading": "Picture cards or a picture book",
+        "Storytelling": "Story pictures or puppets",
+        "Kwazisana": "Greeting pictures or role-play cards",
+        "Mhuka dzepamba": "Pictures of domestic animals",
+        "Machemero emhuka": "Animal pictures and sound cards",
+        "Nhetembo": "A familiar poem and picture cards",
+        "Kutaura nyaya": "Story pictures",
+        "Weather": "Weather pictures",
+        "Plants": "A plant, leaves and pictures",
+        "Domestic animals": "Animal pictures",
+        "Simple experiments": "Safe classroom materials",
+        "Everyday tools": "Pictures of everyday tools",
+        "Family": "Family pictures or drawings",
+        "Community helpers": "Pictures of community workers",
+        "Culture and heritage": "Cultural pictures and objects",
+        "Transport": "Toy vehicles or transport pictures",
+        "Child rights": "Pictures showing children's needs and rights",
+        "Kicking": "A soft ball and open space",
+        "Jumping and balancing": "A safe open space and floor markers",
+        "Drawing and colouring": "Paper, crayons and pencils",
+        "Singing and dancing": "A familiar song and safe open space",
+        "Modelling": "Clay or safe modelling material"
+    }.get(topic, "Pictures, paper and familiar classroom objects")
 
-    tasks = {
-        "Mathematics": f"Use objects to practise {topic.lower()}.",
-        "English": f"Practise {topic.lower()} using words, sounds or pictures.",
-        "Shona": f"Practise {topic.lower()} using familiar Shona words.",
-        "Science and Technology": f"Explore {topic.lower()} through safe observation.",
-        "Social Science": f"Discuss or role-play a situation about {topic.lower()}.",
-        "Physical Education and Arts": f"Practise {topic.lower()} through a safe creative or movement activity."
-    }
+    if level == "Needs support":
+        adaptation = "Provide one instruction at a time and demonstrate each step."
+    elif level == "Developing":
+        adaptation = "Give a demonstration, then allow the learner to try with occasional help."
+    else:
+        adaptation = "Add a challenge and encourage the learner to work independently."
 
     interest_ideas = {
-        "Songs": "Include a simple song, rhythm or chant.",
+        "Songs": "Include a simple song, rhythm or rhyme.",
         "Games": "Turn the task into a short learning game.",
         "Stories": "Introduce the task through a short story.",
-        "Drawing": "Invite the learner to draw something related to the topic.",
-        "Movement": "Include safe movements or gestures."
+        "Drawing": "Ask the learner to draw or illustrate the concept.",
+        "Movement": "Include safe movement or actions.",
+        "Animals": "Use animal examples, pictures or toys."
     }
 
     support_ideas = {
-        "None": "Encourage the learner and check understanding.",
-        "Visual aids": "Use clear pictures, objects and demonstrations.",
-        "Repetition": "Repeat instructions and allow extra practice."
-    }
-
-    if level == "Needs support":
-        teaching = "Demonstrate each step and guide the learner."
-    elif level == "Developing":
-        teaching = "Demonstrate once and give prompts when needed."
-    else:
-        teaching = "Encourage independent work and explanations."
-
-    if young:
-        steps = [
-            "Show a picture or real object related to the topic.",
-            f"Help the learner to {tasks[area].lower()}",
-            "Let the learner practise through play.",
-            "Praise the learner and ask a simple question."
-        ]
-        duration = "10–15 minutes"
-    else:
-        steps = [
-            "Introduce the topic and discuss what the learner knows.",
-            f"Demonstrate how to {tasks[area].lower()}",
-            "Ask the learner to complete the task.",
-            "Review the work and give feedback."
-        ]
-        duration = "20–30 minutes"
-
-    assessment = {
-        "Needs support": "Check whether the learner participates with guidance.",
-        "Developing": "Check whether the learner completes the task with some prompts.",
-        "Challenging": "Check whether the learner completes the task independently."
+        "None": "Offer ordinary verbal instructions and encouragement.",
+        "Visual aids": "Use clear pictures, cards, demonstrations or objects.",
+        "Repetition": "Repeat instructions and give extra practice.",
+        "Hands-on activities": "Let the learner handle safe objects and learn by doing."
     }
 
     return {
-        "objective": objectives[area],
-        "materials": materials[area],
-        "task": tasks[area],
-        "steps": steps,
+        "objective": objective,
+        "materials": materials,
         "duration": duration,
-        "teaching": teaching,
+        "steps": steps,
+        "adaptation": adaptation,
         "interest": interest_ideas[interest],
-        "support": support_ideas[support],
-        "assessment": assessment[level]
+        "support": support_ideas[support]
     }
 
 
-def show_activity(area, topic, age, level, interest, support):
-    activity = make_activity(
-        area, topic, age, level, interest, support
-    )
-
-    st.success("Your learning activity is ready!")
-
-    st.write("**Learning area:**", area)
-    st.write("**Topic:**", topic)
-    st.write("**Age group:**", age)
-    st.write("**Duration:**", activity["duration"])
-
-    st.subheader("Learning objective")
-    st.write(activity["objective"])
-
-    st.subheader("Materials")
-    st.write(activity["materials"])
-
-    st.subheader("Activity")
-    st.write(activity["task"])
-    st.write(activity["interest"])
-
-    st.subheader("Teaching steps")
-    for i, step in enumerate(activity["steps"], 1):
-        st.write(f"{i}. {step}")
-
-    st.subheader("Individual support")
-    st.write(activity["teaching"])
-    st.write(activity["support"])
-
-    st.subheader("Assessment")
-    st.write(activity["assessment"])
-
-
-st.title("🌱 ECD Learn & Grow")
-st.write("Individualised Learning Activity Generator")
-st.caption(
-    "Designed to help teachers prepare activities and support young learners."
-)
-
 mode = st.radio(
     "Choose a mode",
-    ["Teacher Mode 👩‍🏫", "Learner Mode 🧒"],
+    ["Learner Mode 🧒", "Teacher Mode 👩‍🏫"],
     horizontal=True
 )
 
-if mode == "Teacher Mode 👩‍🏫":
-    st.header("👩‍🏫 Teacher Mode")
-
-    if not database_ready:
-        st.error(
-            "Database connection failed. Check SUPABASE_URL, "
-            "SUPABASE_KEY and the Streamlit Cloud logs."
-        )
+with st.form("activity_form"):
+    if mode == "Teacher Mode 👩‍🏫":
+        learner_name = st.text_input("Learner name or classroom identifier")
     else:
-        st.subheader("1. Register a learner")
+        learner_name = ""
 
-        with st.form("register_learner"):
-            learner_name = st.text_input("Learner name or ID")
+    age = st.selectbox("Learner age group", AGES)
+    area = st.selectbox("Learning area", list(AREAS.keys()))
+    topic = st.selectbox("Topic", AREAS[area])
+    level = st.selectbox("Ability level", LEVELS)
+    interest = st.selectbox("Learner's interest", INTERESTS)
+    support = st.selectbox("Additional support", SUPPORTS)
 
-            learner_age = st.selectbox(
-                "Age group",
-                ["Under 6 years", "7–8 years"]
-            )
+    submitted = st.form_submit_button("Generate Activity")
 
-            learner_level = st.selectbox(
-                "Ability level", LEVELS
-            )
-
-            learner_interest = st.selectbox(
-                "Interests", INTERESTS
-            )
-
-            learner_support = st.selectbox(
-                "Additional support", SUPPORTS
-            )
-
-            save_learner = st.form_submit_button(
-                "Save Learner Permanently"
-            )
-
-        if save_learner:
-            if not learner_name.strip():
-                st.warning("Enter a learner name or ID.")
-            else:
-                try:
-                    result = supabase.table("learners").insert({
-                        "learner_name": learner_name.strip(),
-                        "age_group": learner_age,
-                        "ability_level": learner_level,
-                        "interests": learner_interest,
-                        "support_needs": learner_support
-                    }).execute()
-
-                    if result.data:
-                        st.success("Learner saved successfully!")
-                    else:
-                        st.error("No learner record was returned.")
-                except Exception:
-                    st.error(
-                        "Could not save the learner. Check that the "
-                        "learners table exists and database permissions "
-                        "allow this operation."
-                    )
-
-        st.divider()
-        st.subheader("2. Registered learners")
-
-        try:
-            response = (
-                supabase.table("learners")
-                .select(
-                    "id, learner_name, age_group, ability_level, "
-                    "interests, support_needs"
-                )
-                .order("id", desc=True)
-                .execute()
-            )
-
-            learners = response.data or []
-
-            if learners:
-                st.dataframe(
-                    [
-                        {
-                            "ID": learner["id"],
-                            "Learner": learner["learner_name"],
-                            "Age": learner["age_group"],
-                            "Ability": learner["ability_level"],
-                            "Interest": learner["interests"],
-                            "Support": learner["support_needs"]
-                        }
-                        for learner in learners
-                    ],
-                    use_container_width=True
-                )
-
-                learner_options = {
-                    f'{item["learner_name"]} (ID: {item["id"]})': item
-                    for item in learners
-                }
-
-                selected_label = st.selectbox(
-                    "Select a learner for an activity",
-                    list(learner_options.keys())
-                )
-
-                selected = learner_options[selected_label]
-
-                st.divider()
-                st.subheader("3. Generate an individualised activity")
-
-                with st.form("teacher_activity"):
-                    area = st.selectbox(
-                        "Learning area", list(TOPICS.keys())
-                    )
-                    topic = st.selectbox(
-                        "Topic", TOPICS[area]
-                    )
-                    generate = st.form_submit_button(
-                        "Generate Teaching Plan"
-                    )
-
-                if generate:
-                    show_activity(
-                        area,
-                        topic,
-                        selected["age_group"],
-                        selected["ability_level"],
-                        selected["interests"],
-                        selected["support_needs"]
-                    )
-
-            else:
-                st.info(
-                    "No learners registered yet. Register a learner above."
-                )
-
-        except Exception:
-            st.error(
-                "Could not load learner records. Check the table "
-                "and database permissions."
-            )
-
-
-else:
-    st.header("🧒 My Learning Corner")
-    st.write("Hello! Choose a topic and let's learn. 🌈")
-
-    age = st.selectbox(
-        "Your age group",
-        ["Under 6 years", "7–8 years"],
-        key="child_age"
+if submitted:
+    activity = generate_activity(
+        area, topic, age, level, interest, support
     )
 
-    area = st.selectbox(
-        "What would you like to learn?",
-        list(TOPICS.keys()),
-        key="child_area"
-    )
+    st.session_state["current_activity"] = {
+        "area": area,
+        "topic": topic,
+        "age": age,
+        "learner_name": learner_name,
+        "activity": activity
+    }
 
-    topic = st.selectbox(
-        "Choose a topic",
-        TOPICS[area],
-        key="child_topic"
-    )
+if "current_activity" in st.session_state:
+    current = st.session_state["current_activity"]
+    activity = current["activity"]
 
-    interest = st.selectbox(
-        "Choose how you want to learn",
-        INTERESTS,
-        key="child_interest"
-    )
+    st.divider()
+    st.subheader(f"📚 {current['area']}: {current['topic']}")
+    if current["learner_name"]:
+        st.write("Learner:", current["learner_name"])
 
-    if st.button("Let's Learn! 🌟"):
-        show_activity(
-            area,
-            topic,
-            age,
-            "Developing",
-            interest,
-            "Visual aids"
+    st.write("**Age group:**", current["age"])
+    st.write("**Learning objective:**", activity["objective"])
+    st.write("**Materials:**", activity["materials"])
+    st.write("**Duration:**", activity["duration"])
+
+    st.write("**Personalisation:**", activity["adaptation"])
+    st.write("**Interest-based activity:**", activity["interest"])
+    st.write("**Additional support:**", activity["support"])
+
+    st.write("### Activity steps")
+    for number, step in enumerate(activity["steps"], start=1):
+        st.write(f"{number}. {step}")
+
+    st.divider()
+    st.subheader("📝 Assessment and feedback")
+
+    performance = st.selectbox(
+        "Learner's performance",
+        ["Achieved", "Developing", "Needs support"],
+        key="performance"
+    )
+    notes = st.text_area("Teacher observations (optional)")
+
+    if st.button("Suggest Feedback"):
+        if performance == "Achieved":
+            feedback = "Well done! You have demonstrated understanding of the activity."
+            next_steps = "Introduce a slightly more challenging activity."
+        elif performance == "Developing":
+            feedback = "Good effort! Keep practising to build confidence."
+            next_steps = "Repeat the activity with examples and guided practice."
+        else:
+            feedback = "Thank you for trying. We will learn this step by step."
+            next_steps = "Use simpler examples, visual aids and one-to-one support."
+
+        st.write("**Suggested feedback:**", feedback)
+        st.write("**Recommended next steps:**", next_steps)
+
+    plan = (
+        f"ECD Learn & Grow Activity Plan\n"
+        f"Learning area: {current['area']}\n"
+        f"Topic: {current['topic']}\n"
+        f"Age group: {current['age']}\n"
+        f"Objective: {activity['objective']}\n"
+        f"Materials: {activity['materials']}\n"
+        f"Duration: {activity['duration']}\n"
+        f"Personalisation: {activity['adaptation']}\n"
+        f"Interest: {activity['interest']}\n"
+        f"Support: {activity['support']}\n\n"
+        + "\n".join(
+            f"{i}. {step}"
+            for i, step in enumerate(activity["steps"], start=1)
         )
-        st.balloons()
+    )
 
-st.divider()
+    st.download_button(
+        "Download Activity Plan",
+        data=plan,
+        file_name="ecd_activity_plan.txt",
+        mime="text/plain"
+    )
+
 st.caption(
-    "Learner records are stored in Supabase when database access "
-    "is configured. Child-facing mode does not display the learner register."
+    "Note: Learner information and assessments are not saved to a database. "
+    "The current activity is kept temporarily in the app session."
 )
