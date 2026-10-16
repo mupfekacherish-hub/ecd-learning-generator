@@ -18,19 +18,6 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"],
 )
 
-# -----------------------------
-# ECD LEARNING CONTENT
-# Picture-first activities are used for younger learners.
-# -----------------------------
-
-
-    page_title="ECD Learn & Grow",
-    page_icon="🌈",
-    layout="centered",
-    initial_sidebar_state="collapsed",
-)
-
-# -----------------------------
 # ECD LEARNING CONTENT
 # Picture-first activities are used for younger learners.
 # -----------------------------
