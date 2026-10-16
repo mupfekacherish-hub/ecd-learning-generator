@@ -1,6 +1,22 @@
 import random
 import streamlit as st
 
+from supabase import create_client
+
+@st.cache_resource
+def connect_database():
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    return create_client(url, key)
+
+try:
+    supabase = connect_database()
+    database_ready = True
+except Exception:
+    supabase = None
+    database_ready = False
+
+
 st.set_page_config(
     page_title="ECD Learn & Grow",
     page_icon="🌱",
