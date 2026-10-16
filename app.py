@@ -4,6 +4,7 @@ from datetime import datetime
 
 import streamlit as st
 from supabase import create_client
+import os
 
 st.set_page_config(
     page_title="ECD Learn & Grow",
