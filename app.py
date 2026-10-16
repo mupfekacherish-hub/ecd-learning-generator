@@ -1,11 +1,15 @@
+
 import streamlit as st
 from datetime import datetime
 import json
 import os
 from supabase import create_client
 
-
 st.set_page_config(
+    page_title="ECD Learn & Grow",
+    page_icon="🌱",
+    layout="wide"
+)
 
 # Connect to the Supabase database
 supabase = create_client(
