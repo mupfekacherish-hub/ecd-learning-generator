@@ -1,433 +1,407 @@
 import streamlit as st
+from datetime import datetime
+import json
+import os
 
 st.set_page_config(
-    page_title="ECD Individualised Learning Generator",
-    page_icon="📚",
-    layout="centered"
+    page_title="ECD Learn & Grow",
+    page_icon="🌈",
+    layout="centered",
+    initial_sidebar_state="collapsed",
 )
 
-st.title("ECD Individualised Learning Activity Generator")
-st.write(
-    "Create, personalise and edit learning activities "
-    "for Early Childhood Development learners."
-)
-
-# SIX ECD LEARNING AREAS AND ALIGNED TOPICS
-LEARNING_AREAS = {
+# -----------------------------
+# ECD LEARNING CONTENT
+# Picture-first activities are used for younger learners.
+# -----------------------------
+AREAS = {
     "Mathematics": {
-        "Counting and number recognition": [
-            "Count objects and recognise numbers.",
-            "Bottle tops, counters and number cards.",
-            "Let the learner count objects and match quantities to number cards.",
-            "Ask the learner to count a selected number of objects."
-        ],
-        "Addition and subtraction": [
-            "Solve simple addition and subtraction problems using objects.",
-            "Counters, stones and number cards.",
-            "Demonstrate joining groups and taking objects away.",
-            "Observe whether the learner solves practical problems."
-        ],
-        "Shapes and patterns": [
-            "Recognise basic shapes and continue simple patterns.",
-            "Shape cards, blocks and coloured objects.",
-            "Ask the learner to identify shapes and complete a pattern.",
-            "Check whether the learner identifies shapes and continues patterns."
-        ],
-        "Sorting and comparing": [
-            "Sort objects and compare their sizes or quantities.",
-            "Blocks, bottle tops and classroom objects.",
-            "Ask the learner to sort objects by colour, shape or size.",
-            "Observe how the learner sorts and compares objects."
-        ],
-        "Measurement": [
-            "Compare length, height, weight and capacity using familiar objects.",
-            "Cups, containers and classroom objects.",
-            "Let the learner compare objects using longer, shorter, heavier, lighter, full and empty.",
-            "Ask the learner to compare two objects."
-        ]
+        "icon": "🔢",
+        "topics": {
+            "Counting and number recognition": [
+                {"prompt": "Touch the group with THREE apples.", "choices": [("🍎", "one apple"), ("🍎 🍎 🍎", "three apples"), ("🍎 🍎", "two apples")], "answer": "three apples", "objective": "Count objects and match a quantity."},
+                {"prompt": "Which picture shows ONE ball?", "choices": [("⚽ ⚽", "two balls"), ("⚽", "one ball"), ("⚽ ⚽ ⚽", "three balls")], "answer": "one ball", "objective": "Recognise a quantity of one."},
+            ],
+            "Shapes and patterns": [
+                {"prompt": "Touch the circle.", "choices": [("🔺", "triangle"), ("🟦", "square"), ("⚪", "circle")], "answer": "circle", "objective": "Recognise basic shapes."},
+                {"prompt": "What comes next? 🔴 🔵 🔴 🔵 ...", "choices": [("🔴", "red"), ("🔵", "blue"), ("🟢", "green")], "answer": "red", "objective": "Continue a simple pattern."},
+            ],
+            "Sorting and comparing": [
+                {"prompt": "Touch the BIG animal.", "choices": [("🐘", "big elephant"), ("🐜", "small ant"), ("🐁", "small mouse")], "answer": "big elephant", "objective": "Compare sizes."},
+            ],
+            "Addition and subtraction": [
+                {"prompt": "You have one banana. You get one more. How many bananas?", "choices": [("🍌", "one banana"), ("🍌🍌", "two bananas"), ("🍌🍌🍌", "three bananas")], "answer": "two bananas", "objective": "Explore joining groups using pictures."},
+            ],
+            "Measurement": [
+                {"prompt": "Touch the FULL cup.", "choices": [("🥛", "full cup"), ("🥤", "empty cup"), ("🫗", "spilled drink")], "answer": "full cup", "objective": "Compare full and empty."},
+            ],
+        },
     },
-
     "Shona": {
-        "Kwaziso ine rukudzo": [
-            "Use appropriate and respectful greetings in Shona.",
-            "Greeting cards and role-play materials.",
-            "Practise greetings such as Mangwanani and Maswera sei.",
-            "Observe whether the learner uses appropriate greetings."
-        ],
-        "Mazita ezvinhu": [
-            "Name familiar people, animals and objects in Shona.",
-            "Real objects, toys and picture cards.",
-            "Show familiar items and ask the learner to name them in Shona.",
-            "Record the words the learner names correctly."
-        ],
-        "Machemero emhuka": [
-            "Identify familiar animals and imitate their sounds.",
-            "Animal pictures and toy animals.",
-            "Show animal pictures and practise the sounds made by each animal.",
-            "Check whether the learner identifies the animals and their sounds."
-        ],
-        "Kuverenga mifananidzo": [
-            "Describe pictures and communicate simple ideas in Shona.",
-            "Picture cards and storybooks.",
-            "Ask the learner to describe what is happening in a picture.",
-            "Listen for relevant words and ideas."
-        ],
-        "Nziyo nenhetembo": [
-            "Participate in familiar Shona songs and rhymes.",
-            "Familiar songs, rhymes and picture cards.",
-            "Sing a familiar Shona song and encourage the learner to join in.",
-            "Observe participation and recall of words."
-        ]
+        "icon": "🗣️",
+        "topics": {
+            "Mazita ezvinhu": [
+                {"prompt": "Bata mufananidzo wembwa. (Touch the dog.)", "choices": [("🐶", "imbwa"), ("🐱", "katsi"), ("🐄", "mombe")], "answer": "imbwa", "objective": "Identify familiar objects and animals in Shona."},
+            ],
+            "Machemero emhuka": [
+                {"prompt": "Ndeipi mhuka inoti 'moo'? (Which animal says moo?)", "choices": [("🐄", "mombe"), ("🐔", "huku"), ("🐑", "gwai")], "answer": "mombe", "objective": "Match familiar animals to their sounds."},
+            ],
+            "Kwaziso ine rukudzo": [
+                {"prompt": "Mangwanani! Ndeupi mufananidzo unoratidza kukwazisana?", "choices": [("👋", "kukwazisana"), ("😴", "kurara"), ("🍽️", "kudya")], "answer": "kukwazisana", "objective": "Recognise a respectful greeting."},
+            ],
+            "Kuverenga mifananidzo": [
+                {"prompt": "Tarisa mufananidzo. Chii chiri mudenga?", "choices": [("☀️", "zuva"), ("🐟", "hove"), ("👟", "shangu")], "answer": "zuva", "objective": "Talk about familiar pictures in Shona."},
+            ],
+            "Nziyo nenhetembo": [
+                {"prompt": "Ndeupi mufananidzo unoratidza kuimba?", "choices": [("🎤", "kuimba"), ("🛏️", "kurara"), ("🚗", "kutyaira")], "answer": "kuimba", "objective": "Recognise singing and participate in rhymes."},
+            ],
+        },
     },
-
     "English": {
-        "Alphabet recognition": [
-            "Recognise and name letters of the English alphabet.",
-            "Alphabet charts and letter cards.",
-            "Show selected letters and ask the learner to identify them.",
-            "Check whether the learner recognises the selected letters."
-        ],
-        "Phonics and letter sounds": [
-            "Recognise letter sounds and match sounds to familiar words.",
-            "Letter cards and picture cards.",
-            "Say a letter sound and ask the learner to identify a matching picture.",
-            "Listen for correct identification of the sound."
-        ],
-        "Vocabulary development": [
-            "Name familiar objects and use simple English words.",
-            "Classroom objects and picture cards.",
-            "Ask the learner to name objects and describe their features.",
-            "Observe the learner's use of relevant vocabulary."
-        ],
-        "Listening and speaking": [
-            "Listen to simple instructions and respond orally.",
-            "Familiar objects and picture cards.",
-            "Give simple instructions and invite the learner to respond.",
-            "Observe listening and speaking skills."
-        ],
-        "Picture reading and storytelling": [
-            "Describe pictures and respond to questions about a short story.",
-            "Picture books and story cards.",
-            "Read a short story or discuss a picture and ask simple questions.",
-            "Check whether the learner recalls characters or events."
-        ]
+        "icon": "🔤",
+        "topics": {
+            "Picture reading and storytelling": [
+                {"prompt": "Look at the picture. What is the child doing?", "choices": [("🏃", "running"), ("😴", "sleeping"), ("🍽️", "eating")], "answer": "running", "objective": "Interpret a picture and use simple words."},
+                {"prompt": "Which picture shows a rainy day?", "choices": [("☀️", "sunny"), ("🌧️", "rainy"), ("🌙", "night")], "answer": "rainy", "objective": "Answer a simple question about a picture."},
+            ],
+            "Vocabulary development": [
+                {"prompt": "Touch the picture of a cat.", "choices": [("🐶", "dog"), ("🐱", "cat"), ("🐟", "fish")], "answer": "cat", "objective": "Recognise familiar English words through pictures."},
+            ],
+            "Listening and speaking": [
+                {"prompt": "Which picture shows someone listening?", "choices": [("👂", "listening"), ("🏃", "running"), ("😴", "sleeping")], "answer": "listening", "objective": "Connect familiar actions with words."},
+            ],
+            "Alphabet recognition": [
+                {"prompt": "Find the letter A.", "choices": [("B", "letter B"), ("A", "letter A"), ("C", "letter C")], "answer": "letter A", "objective": "Begin to recognise selected letters."},
+            ],
+            "Phonics and letter sounds": [
+                {"prompt": "Which picture begins with the /b/ sound?", "choices": [("🍌", "banana"), ("🐟", "fish"), ("☀️", "sun")], "answer": "banana", "objective": "Match an initial sound to a familiar word."},
+            ],
+        },
     },
-
     "Social Science": {
-        "My family": [
-            "Identify family members and describe their roles.",
-            "Family pictures and drawing materials.",
-            "Invite the learner to identify family members and discuss how they help one another.",
-            "Listen for identification of family members and their roles."
-        ],
-        "My school and community": [
-            "Identify important places and people in the community.",
-            "Pictures of schools, clinics, shops and community workers.",
-            "Discuss familiar places and match community workers to their roles.",
-            "Ask the learner to identify a community worker and explain their role."
-        ],
-        "Transport and road safety": [
-            "Identify forms of transport and practise basic road safety.",
-            "Vehicle pictures and road-safety cards.",
-            "Discuss vehicles and demonstrate safe road-crossing behaviour.",
-            "Ask the learner to identify a safe road-crossing behaviour."
-        ],
-        "Weather and seasons": [
-            "Identify weather conditions and suitable clothing.",
-            "Weather pictures and clothing cards.",
-            "Discuss the weather and match clothing to different conditions.",
-            "Ask the learner to describe the weather and choose suitable clothing."
-        ],
-        "Culture and heritage": [
-            "Recognise familiar cultural practices and local heritage.",
-            "Relevant pictures, stories and cultural objects.",
-            "Discuss a familiar tradition, celebration or cultural practice.",
-            "Invite the learner to describe a familiar cultural practice."
-        ]
+        "icon": "🌍",
+        "topics": {
+            "My family": [
+                {"prompt": "Which picture shows a family?", "choices": [("👨‍👩‍👧", "family"), ("🚗", "car"), ("🌳", "tree")], "answer": "family", "objective": "Recognise family and belonging."},
+            ],
+            "My school and community": [
+                {"prompt": "Where do children go to learn?", "choices": [("🏫", "school"), ("🏥", "clinic"), ("🛒", "shop")], "answer": "school", "objective": "Identify familiar community places."},
+            ],
+            "Transport and road safety": [
+                {"prompt": "Which picture shows a bus?", "choices": [("🚌", "bus"), ("🚲", "bicycle"), ("🚂", "train")], "answer": "bus", "objective": "Identify familiar forms of transport."},
+            ],
+            "Weather and seasons": [
+                {"prompt": "Which picture shows rain?", "choices": [("☀️", "sun"), ("🌧️", "rain"), ("🌈", "rainbow")], "answer": "rain", "objective": "Recognise common weather conditions."},
+            ],
+            "Culture and heritage": [
+                {"prompt": "Which picture shows people dancing together?", "choices": [("💃", "dancing"), ("🛌", "sleeping"), ("📚", "reading")], "answer": "dancing", "objective": "Recognise familiar cultural and social activities."},
+            ],
+        },
     },
-
     "Science and Technology": {
-        "Living and non-living things": [
-            "Distinguish between living and non-living things.",
-            "Pictures of plants, animals and everyday objects.",
-            "Ask the learner to sort pictures into living and non-living groups.",
-            "Ask the learner to explain one classification."
-        ],
-        "Plants and their growth": [
-            "Identify the basic needs of plants.",
-            "Seeds, soil, water and a plant.",
-            "Observe a plant and discuss what it needs to grow.",
-            "Ask the learner to name basic plant needs."
-        ],
-        "Animals and their habitats": [
-            "Identify familiar animals and describe where they live.",
-            "Animal pictures and habitat cards.",
-            "Match animals to suitable habitats and discuss their needs.",
-            "Check whether the learner matches animals to appropriate habitats."
-        ],
-        "The human body and senses": [
-            "Identify body parts and the five senses.",
-            "Body pictures and safe objects to explore.",
-            "Discuss how the senses help us understand our surroundings.",
-            "Ask the learner to identify a sense and its function."
-        ],
-        "Materials and everyday technology": [
-            "Explore familiar materials and describe the uses of everyday tools.",
-            "Safe objects made from wood, plastic, metal or fabric.",
-            "Let the learner compare materials and discuss the uses of familiar tools.",
-            "Ask the learner to describe a material or explain a tool's use."
-        ]
+        "icon": "🔬",
+        "topics": {
+            "Living and non-living things": [
+                {"prompt": "Touch something that is living.", "choices": [("🌳", "tree"), ("🪨", "stone"), ("🚗", "car")], "answer": "tree", "objective": "Begin to distinguish living and non-living things."},
+            ],
+            "Plants and their growth": [
+                {"prompt": "What does a plant need to grow?", "choices": [("💧", "water"), ("🍬", "sweets"), ("📺", "television")], "answer": "water", "objective": "Recognise a basic need of plants."},
+            ],
+            "Animals and their habitats": [
+                {"prompt": "Where does a fish live?", "choices": [("🌊", "water"), ("🌳", "tree"), ("🛏️", "bed")], "answer": "water", "objective": "Match animals to familiar habitats."},
+            ],
+            "The human body and senses": [
+                {"prompt": "Which body part helps you hear?", "choices": [("👂", "ears"), ("👀", "eyes"), ("👃", "nose")], "answer": "ears", "objective": "Identify body parts and their functions."},
+            ],
+            "Materials and everyday technology": [
+                {"prompt": "Which object helps us call someone?", "choices": [("📱", "phone"), ("🥄", "spoon"), ("🧦", "sock")], "answer": "phone", "objective": "Identify familiar tools and technology."},
+            ],
+        },
     },
-
     "Physical Education and Arts": {
-        "Movement and balance": [
-            "Develop balance and coordination through movement.",
-            "Open space and floor markers.",
-            "Invite the learner to walk along a line, jump or balance safely.",
-            "Observe balance, coordination and safe participation."
-        ],
-        "Ball skills and games": [
-            "Practise rolling, throwing, kicking or catching a soft ball.",
-            "Soft balls and a safe playing area.",
-            "Demonstrate a simple ball activity and allow the learner to practise.",
-            "Observe coordination and participation."
-        ],
-        "Drawing and colouring": [
-            "Express ideas through drawing and colouring.",
-            "Paper, crayons and pencils.",
-            "Invite the learner to draw and colour a familiar object or experience.",
-            "Observe creative choices and expression of ideas."
-        ],
-        "Painting and printing": [
-            "Explore colours, textures and patterns through painting or printing.",
-            "Child-safe paint, paper and brushes.",
-            "Demonstrate a simple painting or printing technique and allow exploration.",
-            "Observe participation and creative use of materials."
-        ],
-        "Music, singing and dance": [
-            "Respond to rhythm through singing, clapping and movement.",
-            "Familiar songs and simple musical instruments.",
-            "Sing a familiar song, clap a rhythm and invite the learner to move.",
-            "Observe participation and response to rhythm."
-        ],
-        "Modelling and construction": [
-            "Create a simple object using safe art or construction materials.",
-            "Play dough, paper or large construction blocks.",
-            "Invite the learner to make a simple model or construct an object.",
-            "Observe creativity, coordination and safe use of materials."
-        ]
-    }
+        "icon": "🎨",
+        "topics": {
+            "Movement and balance": [
+                {"prompt": "Which picture shows jumping?", "choices": [("🤸", "jumping"), ("😴", "sleeping"), ("📖", "reading")], "answer": "jumping", "objective": "Recognise and practise safe movements."},
+            ],
+            "Ball skills and games": [
+                {"prompt": "Which object can you kick or throw in a game?", "choices": [("⚽", "ball"), ("📘", "book"), ("🥣", "bowl")], "answer": "ball", "objective": "Recognise equipment used in simple games."},
+            ],
+            "Drawing and colouring": [
+                {"prompt": "Which tool can you use to colour a picture?", "choices": [("🖍️", "crayon"), ("🥄", "spoon"), ("🧦", "sock")], "answer": "crayon", "objective": "Identify tools for drawing and colouring."},
+            ],
+            "Painting and printing": [
+                {"prompt": "Which tool can paint a picture?", "choices": [("🖌️", "paintbrush"), ("👟", "shoe"), ("🍎", "apple")], "answer": "paintbrush", "objective": "Explore art materials."},
+            ],
+            "Music, singing and dance": [
+                {"prompt": "Which picture shows a musical instrument?", "choices": [("🥁", "drum"), ("🪑", "chair"), ("🍌", "banana")], "answer": "drum", "objective": "Recognise music and rhythm activities."},
+            ],
+            "Modelling and construction": [
+                {"prompt": "Which material can you shape to make a model?", "choices": [("🟤", "play dough"), ("📱", "phone"), ("🥛", "cup")], "answer": "play dough", "objective": "Explore creating simple models."},
+            ],
+        },
+    },
 }
 
-# LEARNER INFORMATION
-st.header("1. Learner Information")
+AVATARS = ["🦁", "🐘", "🦋", "🐼", "🐸", "🦒", "🐰", "🐢"]
 
-col1, col2 = st.columns(2)
+if "learners" not in st.session_state:
+    st.session_state.learners = []
+if "results" not in st.session_state:
+    st.session_state.results = []
+if "active_learner" not in st.session_state:
+    st.session_state.active_learner = None
+if "activity" not in st.session_state:
+    st.session_state.activity = None
+if "teacher_unlocked" not in st.session_state:
+    st.session_state.teacher_unlocked = False
 
-with col1:
-    age = st.selectbox("Learner's age", [3, 4, 5, 6, 7, 8])
+def learner_by_id(learner_id):
+    for learner in st.session_state.learners:
+        if learner["id"] == learner_id:
+            return learner
+    return None
 
-with col2:
-    level = st.selectbox(
-        "Ability level",
-        ["Beginner", "Intermediate", "Advanced"]
-    )
+def get_questions(area, topic, age):
+    items = AREAS[area]["topics"][topic]
+    # Keep activities short and visual for children under six.
+    if age < 6:
+        return items[:1]
+    return items
 
-area = st.selectbox(
-    "Learning area",
-    list(LEARNING_AREAS.keys())
-)
+st.title("🌈 ECD Learn & Grow")
+st.write("Picture-based learning for young children, with a separate teacher assessment area.")
+st.caption("Prototype note: learner profiles and results currently remain in this browser session. They are not yet stored in a permanent shared database.")
 
-# Topics change according to the selected learning area
-topic = st.selectbox(
-    "Topic",
-    list(LEARNING_AREAS[area].keys())
-)
+home, learner_tab, teacher_tab = st.tabs(["🏠 Home", "🧒 Learner Mode", "👩‍🏫 Teacher Mode"])
 
-interest = st.text_input(
-    "Learner's interests",
-    placeholder="e.g. animals, songs, toys or stories"
-)
-
-extra_support = st.checkbox(
-    "Learner needs additional support"
-)
-
-support_notes = ""
-if extra_support:
-    support_notes = st.text_area(
-        "Describe the learner's individual needs",
-        placeholder="e.g. needs demonstrations or shorter instructions"
-    )
-
-# GENERATE ACTIVITY
-st.header("2. Generate Learning Activity")
-
-if st.button("Generate Activity", type="primary",
-             use_container_width=True):
-
-    objective, materials, instructions, assessment = (
-        LEARNING_AREAS[area][topic]
-    )
-
-    if level == "Beginner":
-        instructions += (
-            " Start with one simple step, demonstrate first "
-            "and allow repeated practice."
-        )
-        difficulty = "Use fewer items and simple instructions."
-
-    elif level == "Intermediate":
-        instructions += (
-            " Allow the learner to try the task with occasional guidance."
-        )
-        difficulty = "Use several examples and gradually reduce assistance."
-
+with home:
+    st.subheader("Welcome!")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.info("🧒 **Learner Mode**\n\nTap your picture, then choose a learning area and play.")
+    with c2:
+        st.info("👩‍🏫 **Teacher Mode**\n\nCreate profiles once, review results and record observations.")
+    if not st.session_state.learners:
+        st.warning("No learner profiles yet. The teacher should create learner profiles in Teacher Mode first.")
     else:
-        instructions += (
-            " Encourage independence and ask the learner to explain "
-            "or demonstrate what they have learned."
-        )
-        difficulty = "Offer an additional challenge suited to the learner."
+        st.success(f"{len(st.session_state.learners)} learner profile(s) available in this session.")
 
-    if age <= 4:
-        difficulty += " Keep the activity short and use concrete materials."
-    elif age <= 6:
-        difficulty += " Include demonstrations and opportunities for practice."
+with learner_tab:
+    st.subheader("Tap your picture to begin")
+    if not st.session_state.learners:
+        st.info("Ask your teacher to create your profile first.")
     else:
-        difficulty += " Encourage more independent participation."
+        cols = st.columns(2)
+        for index, learner in enumerate(st.session_state.learners):
+            with cols[index % 2]:
+                if st.button(f"{learner['avatar']}  {learner['name']}", key=f"select_{learner['id']}", use_container_width=True):
+                    st.session_state.active_learner = learner["id"]
+                    st.session_state.activity = None
+                    st.rerun()
 
-    if interest.strip():
-        instructions += (
-            f" Where appropriate, connect the activity to "
-            f"the learner's interest in {interest.strip()}."
+    learner = learner_by_id(st.session_state.active_learner) if st.session_state.active_learner else None
+    if learner:
+        st.divider()
+        st.markdown(f"## Hello, {learner['avatar']} {learner['name']}!")
+        st.caption(f"Age: {learner['age']} | Learning level: {learner['level']}")
+        area_names = list(AREAS.keys())
+        selected_area = st.selectbox(
+            "Choose a learning area",
+            area_names,
+            format_func=lambda name: f"{AREAS[name]['icon']}  {name}",
+            key=f"area_{learner['id']}",
         )
+        topic_names = list(AREAS[selected_area]["topics"].keys())
+        selected_topic = st.selectbox("Choose a picture activity", topic_names, key=f"topic_{learner['id']}_{selected_area}")
+        if st.button("🎲 Start activity", type="primary", use_container_width=True, key=f"start_{learner['id']}"):
+            questions = get_questions(selected_area, selected_topic, learner["age"])
+            st.session_state.activity = {
+                "learner_id": learner["id"],
+                "area": selected_area,
+                "topic": selected_topic,
+                "question_index": 0,
+                "questions": questions,
+                "correct": 0,
+                "attempts": 0,
+                "started": datetime.now().isoformat(timespec="seconds"),
+            }
+            st.rerun()
 
-    if extra_support:
-        personalised_support = (
-            "Demonstrate each step, give one instruction at a time, "
-            "allow extra practice and offer encouragement."
-        )
-        if support_notes.strip():
-            personalised_support += (
-                " Specific support needs: " + support_notes.strip()
-            )
-    else:
-        personalised_support = (
-            "Observe the learner's progress and provide help when needed."
-        )
+        activity = st.session_state.activity
+        if activity and activity["learner_id"] == learner["id"]:
+            q = activity["questions"][activity["question_index"]]
+            st.divider()
+            st.markdown(f"### {activity['area']}: {activity['topic']}")
+            st.markdown(f"#### {q['prompt']}")
+            st.caption(f"Learning goal: {q['objective']}")
+            choice_cols = st.columns(len(q["choices"]))
+            for i, (picture, label) in enumerate(q["choices"]):
+                with choice_cols[i]:
+                    st.markdown(f"<div style='font-size:42px;text-align:center;padding:8px'>{picture}</div>", unsafe_allow_html=True)
+                    if st.button(label, key=f"answer_{learner['id']}_{activity['question_index']}_{i}", use_container_width=True):
+                        activity["attempts"] += 1
+                        is_correct = label == q["answer"]
+                        if is_correct:
+                            activity["correct"] += 1
+                        st.session_state.results.append({
+                            "learner_id": learner["id"],
+                            "learner_name": learner["name"],
+                            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                            "area": activity["area"],
+                            "topic": activity["topic"],
+                            "objective": q["objective"],
+                            "answer": label,
+                            "correct": is_correct,
+                            "kind": "picture activity",
+                        })
+                        activity["last_answer"] = is_correct
+                        activity["answered"] = True
+                        st.rerun()
+            if activity.get("answered"):
+                if activity.get("last_answer"):
+                    st.success("🌟 Well done! You got it right.")
+                else:
+                    st.info(f"Good try! The correct picture is: {q['answer']}. Let's keep learning.")
+                if activity["question_index"] + 1 < len(activity["questions"]):
+                    if st.button("Next picture ➜", type="primary", use_container_width=True):
+                        activity["question_index"] += 1
+                        activity.pop("answered", None)
+                        activity.pop("last_answer", None)
+                        st.rerun()
+                else:
+                    if st.button("Finish activity ⭐", type="primary", use_container_width=True):
+                        st.session_state.results.append({
+                            "learner_id": learner["id"],
+                            "learner_name": learner["name"],
+                            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                            "area": activity["area"],
+                            "topic": activity["topic"],
+                            "objective": "Activity completed",
+                            "answer": f"{activity['correct']} correct out of {activity['attempts']} attempts",
+                            "correct": activity["correct"] == activity["attempts"],
+                            "kind": "activity summary",
+                        })
+                        st.session_state.activity = None
+                        st.success("You finished! Ask your teacher to review your learning.")
+                        st.rerun()
+        if st.button("⬅️ Back to learner pictures", key=f"back_{learner['id']}"):
+            st.session_state.active_learner = None
+            st.session_state.activity = None
+            st.rerun()
 
-    st.session_state["generated"] = True
-    st.session_state["objective"] = objective
-    st.session_state["materials"] = materials
-    st.session_state["instructions"] = instructions
-    st.session_state["difficulty"] = difficulty
-    st.session_state["personalised_support"] = personalised_support
-    st.session_state["assessment"] = assessment
-    st.session_state["extension"] = (
-        "Invite the learner to practise the skill again "
-        "or use it in a new, familiar situation."
-    )
+with teacher_tab:
+    st.subheader("Teacher area")
+    st.write("Create learner profiles once, then review their activity and add observations.")
+    pin = st.text_input("Teacher PIN", type="password", help="Prototype PIN is 2468. Change this before using with real learners.")
+    if st.button("Unlock Teacher Mode", use_container_width=True):
+        if pin == os.environ.get("ECD_TEACHER_PIN", "2468"):
+            st.session_state.teacher_unlocked = True
+            st.success("Teacher Mode unlocked.")
+        else:
+            st.session_state.teacher_unlocked = False
+            st.error("That PIN is not correct.")
 
-# EDITABLE FIELDS
-if st.session_state.get("generated", False):
+    if st.session_state.teacher_unlocked:
+        with st.expander("➕ Create a learner profile", expanded=not bool(st.session_state.learners)):
+            with st.form("create_learner_form", clear_on_submit=True):
+                name = st.text_input("Learner first name or nickname")
+                age = st.selectbox("Age", [3, 4, 5, 6, 7, 8])
+                level = st.selectbox("Current learning level", ["Needs support", "Developing", "Ready for a challenge"])
+                interests = st.multiselect("Interests (optional)", ["Animals", "Songs", "Stories", "Drawing", "Movement", "Vehicles", "Plants"])
+                support = st.selectbox("Activity support", ["Picture prompts", "Repeat instructions", "Extra practice", "No additional support"])
+                avatar = st.selectbox("Choose a profile picture", AVATARS)
+                submitted = st.form_submit_button("Save learner profile", use_container_width=True)
+                if submitted:
+                    if not name.strip():
+                        st.error("Please enter a first name or nickname.")
+                    elif any(x["name"].casefold() == name.strip().casefold() for x in st.session_state.learners):
+                        st.error("A learner with that name is already listed. Use a unique nickname.")
+                    else:
+                        st.session_state.learners.append({
+                            "id": f"learner_{len(st.session_state.learners)+1}_{int(datetime.now().timestamp())}",
+                            "name": name.strip(),
+                            "age": age,
+                            "level": level,
+                            "interests": interests,
+                            "support": support,
+                            "avatar": avatar,
+                            "created": datetime.now().strftime("%Y-%m-%d"),
+                        })
+                        st.success(f"Profile created for {name.strip()}.")
+                        st.rerun()
 
-    st.header("3. Edit and Personalise the Activity")
-    st.write(
-        "Change any field below to meet the learner's individual needs."
-    )
+        if st.session_state.learners:
+            st.markdown("### Learner profiles")
+            for learner in st.session_state.learners:
+                with st.expander(f"{learner['avatar']} {learner['name']} — age {learner['age']}"):
+                    st.write(f"**Level:** {learner['level']}")
+                    st.write(f"**Interests:** {', '.join(learner['interests']) or 'Not specified'}")
+                    st.write(f"**Support:** {learner['support']}")
+                    if st.button(f"Delete profile: {learner['name']}", key=f"delete_{learner['id']}"):
+                        st.session_state.learners = [x for x in st.session_state.learners if x["id"] != learner["id"]]
+                        st.session_state.results = [x for x in st.session_state.results if x["learner_id"] != learner["id"]]
+                        if st.session_state.active_learner == learner["id"]:
+                            st.session_state.active_learner = None
+                        st.rerun()
 
-    objective = st.text_area(
-        "Learning objective",
-        value=st.session_state["objective"],
-        key="objective_edit"
-    )
+            st.markdown("### Assessment and progress")
+            learner_names = ["All learners"] + [x["name"] for x in st.session_state.learners]
+            selected_learner_name = st.selectbox("Choose learner to review", learner_names)
+            filtered = st.session_state.results
+            if selected_learner_name != "All learners":
+                filtered = [r for r in filtered if r["learner_name"] == selected_learner_name]
 
-    materials = st.text_area(
-        "Learning materials",
-        value=st.session_state["materials"],
-        key="materials_edit"
-    )
+            if filtered:
+                total = len([r for r in filtered if r["kind"] == "picture activity"])
+                correct = len([r for r in filtered if r["kind"] == "picture activity" and r["correct"]])
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Recorded answers", total)
+                m2.metric("Correct", correct)
+                m3.metric("Accuracy", f"{round(correct / total * 100) if total else 0}%")
+                st.dataframe(
+                    [{"Date": r["date"], "Learner": r["learner_name"], "Area": r["area"], "Topic": r["topic"], "Result": "Correct" if r["correct"] else "Practise again", "Type": r["kind"]} for r in filtered],
+                    use_container_width=True,
+                    hide_index=True,
+                )
+            else:
+                st.info("No digital activity results recorded yet. Let a learner complete an activity first.")
 
-    instructions = st.text_area(
-        "Activity instructions",
-        value=st.session_state["instructions"],
-        key="instructions_edit",
-        height=150
-    )
+            st.markdown("### Record a practical observation")
+            with st.form("observation_form", clear_on_submit=True):
+                obs_learner = st.selectbox("Learner", [x["name"] for x in st.session_state.learners], key="obs_learner")
+                obs_area = st.selectbox("Learning area", list(AREAS.keys()), key="obs_area")
+                obs_skill = st.text_input("Skill observed", placeholder="e.g. describes a picture in Shona")
+                obs_rating = st.selectbox("Assessment", ["Achieved independently", "Achieved with support", "Needs more practice"])
+                obs_note = st.text_area("Brief note (optional)", placeholder="What did you observe?")
+                save_obs = st.form_submit_button("Save observation", use_container_width=True)
+                if save_obs:
+                    st.session_state.results.append({
+                        "learner_id": next(x["id"] for x in st.session_state.learners if x["name"] == obs_learner),
+                        "learner_name": obs_learner,
+                        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "area": obs_area,
+                        "topic": obs_skill or "Teacher observation",
+                        "objective": obs_skill,
+                        "answer": f"{obs_rating}. {obs_note}".strip(),
+                        "correct": obs_rating == "Achieved independently",
+                        "kind": "teacher observation",
+                    })
+                    st.success("Observation saved.")
+                    st.rerun()
 
-    difficulty = st.text_area(
-        "Difficulty adjustment",
-        value=st.session_state["difficulty"],
-        key="difficulty_edit"
-    )
-
-    personalised_support = st.text_area(
-        "Individual learner support",
-        value=st.session_state["personalised_support"],
-        key="support_edit"
-    )
-
-    assessment = st.text_area(
-        "Assessment",
-        value=st.session_state["assessment"],
-        key="assessment_edit"
-    )
-
-    extension = st.text_area(
-        "Extension activity",
-        value=st.session_state["extension"],
-        key="extension_edit"
-    )
-
-    lesson_plan = f"""
-ECD INDIVIDUALISED LEARNING ACTIVITY
-
-Learning area: {area}
-Topic: {topic}
-Learner age: {age}
-Ability level: {level}
-Interests: {interest or "Not specified"}
-
-LEARNING OBJECTIVE
-{objective}
-
-LEARNING MATERIALS
-{materials}
-
-ACTIVITY INSTRUCTIONS
-{instructions}
-
-DIFFICULTY ADJUSTMENT
-{difficulty}
-
-INDIVIDUAL LEARNER SUPPORT
-{personalised_support}
-
-ASSESSMENT
-{assessment}
-
-EXTENSION ACTIVITY
-{extension}
-"""
-
-    st.header("4. Final Lesson Plan")
-    st.text_area(
-        "Review your personalised lesson plan",
-        value=lesson_plan,
-        height=400
-    )
-
-    st.download_button(
-        "Download Lesson Plan",
-        data=lesson_plan,
-        file_name="ecd_personalised_lesson_plan.txt",
-        mime="text/plain",
-        use_container_width=True
-    )
+            export_rows = [
+                {"date": r["date"], "learner": r["learner_name"], "area": r["area"], "topic_or_skill": r["topic"], "result": r["answer"], "record_type": r["kind"]}
+                for r in st.session_state.results
+            ]
+            if export_rows:
+                st.download_button(
+                    "⬇️ Download assessment records (CSV)",
+                    data=__import__("pandas").DataFrame(export_rows).to_csv(index=False).encode("utf-8"),
+                    file_name="ecd_assessment_records.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
 
 st.divider()
-st.caption(
-    "ECD Learning Generator | Teachers should review activities "
-    "and adapt them to each learner's developmental needs."
-)
+st.caption("ECD Learn & Grow | A teaching prototype. A teacher should supervise learners and review practical skills.")
