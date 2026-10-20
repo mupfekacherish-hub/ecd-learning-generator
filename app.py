@@ -6,6 +6,12 @@ st.set_page_config(
     layout="wide"
 )
 
+supabase = create_client(
+    st.secrets["SUPABASE_URL"],
+    st.secrets["SUPABASE_KEY"]
+)
+
+
 st.title("🌱 ECD Learn & Grow")
 st.write("An individualised learning activity generator for ECD learners.")
 
